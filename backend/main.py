@@ -5,6 +5,13 @@ from backend.auth.routes import router as auth_router
 from backend.admin.routes import router as admin_router
 from backend.auth.deps import get_current_user
 from security.rbac import check_permission
+from backend.rag.document_upload import router as document_upload_router
+from backend.rag.knowledge_api import router as knowledge_router
+from backend.rag.retriever import router as retriever_router
+from backend.admin.document_admin import router as document_admin_router
+from backend.rag.knowledge_center import router as knowledge_center_router
+from backend.rag.folder_manager import router as folder_router
+from backend.rag.department_collections import router as department_router
 
 app = FastAPI(
     title="Enterprise AI Platform",
@@ -28,8 +35,14 @@ async def audit_middleware(request: Request, call_next):
 
 
 app.include_router(auth_router)
+app.include_router(document_upload_router)
 app.include_router(admin_router)
-
+app.include_router(knowledge_router)
+app.include_router(retriever_router)
+app.include_router(document_admin_router)
+app.include_router(knowledge_center_router)
+app.include_router(folder_router)
+app.include_router(department_router)
 
 @app.get(
     "/",
