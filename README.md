@@ -1,89 +1,25 @@
-# Enterprise AI Platform for BlackRoth
+# Enterprise AI Platform
 
-## Project Overview
-
-The Enterprise AI Platform is an AI-powered enterprise application developed for BlackRoth. The platform enables employees to securely access AI services based on their roles and permissions. It integrates authentication, Role-Based Access Control (RBAC), Retrieval-Augmented Generation (RAG), AI agents, monitoring, audit logging, and an administrative dashboard.
+An enterprise-grade AI platform built for BlackRoth that provides secure authentication, Role-Based Access Control (RBAC), Retrieval-Augmented Generation (RAG), enterprise knowledge management, semantic search, and AI-powered document assistance.
 
 ---
 
-# Sprint 1
+# Project Overview
 
-Sprint 1 focuses on building the project foundation, including:
+The Enterprise AI Platform enables employees to securely interact with company knowledge using AI.
 
-- Project Initialization
-- FastAPI Backend
-- PostgreSQL Database
+Key capabilities include:
+
 - JWT Authentication
-- RBAC Foundation
-- Admin APIs
+- Role-Based Access Control (RBAC)
 - Audit Logging
-- API Documentation
-- Enterprise Architecture Documentation
-
----
-
-# Features
-
-## Authentication
-
-- JWT Authentication
-- Secure Login
-- Logout
-- Refresh Token
-- Password Hashing using bcrypt
-- Token Expiration
-
----
-
-## User Management
-
-- User Registration
-- User Management APIs
-- Role Management
-- Permission Management
-
----
-
-## Role-Based Access Control (RBAC)
-
-Supported Roles:
-
-- Admin
-- HR
-- Manager
-- Employee
-- Support
-
-Role-based authorization ensures users only access resources permitted by their assigned role.
-
----
-
-## AI Platform Components
-
-- AI Chat
-- Retrieval-Augmented Generation (RAG)
-- Multi-Agent System
-- MCP Tool Integration
-- Enterprise Knowledge Search
-
----
-
-## Monitoring
-
-- Health Check API
-- Audit Logs
-- Request Monitoring
-
----
-
-## Admin Dashboard APIs
-
-- Get Users
-- Create User
-- Update User
-- Delete User
-- Get Roles
-- Get Permissions
+- Enterprise Knowledge Base
+- Document Processing Pipeline
+- Embedding Generation
+- ChromaDB Vector Database
+- Semantic Search
+- Enterprise Knowledge Center
+- Docker Deployment
 
 ---
 
@@ -91,33 +27,33 @@ Role-based authorization ensures users only access resources permitted by their 
 
 ## Backend
 
-- Python
+- Python 3.14
 - FastAPI
 - Uvicorn
 
 ## Database
 
 - PostgreSQL
+- ChromaDB
 
-## Authentication
+## AI & RAG
+
+- Sentence Transformers
+- HuggingFace
+- Chroma Vector Database
+
+## Security
 
 - JWT
-- python-jose
 - Passlib (bcrypt)
+- RBAC
+- Audit Logging
 
-## ORM
+## Deployment
 
-- SQLAlchemy
-
-## API Documentation
-
-- Swagger UI
-- OpenAPI
-
-## Version Control
-
-- Git
-- GitHub
+- Docker
+- Docker Compose
+- Redis
 
 ---
 
@@ -127,217 +63,254 @@ Role-based authorization ensures users only access resources permitted by their 
 enterprise-ai-platform/
 
 backend/
-frontend/
-gateway/
-agents/
-rag/
-mcp/
-security/
-monitoring/
+│
+├── admin/
+├── audit/
+├── auth/
+├── authentication/
+├── chat/
+├── evaluation/
+├── rag/
+├── security/
+├── tests/
+
 database/
-docker/
-kubernetes/
+
 docs/
-tests/
-scripts/
+
+storage/
+├── documents/
+├── chroma_db/
+
+docker-compose.yml
+Dockerfile
+requirements.txt
+README.md
 ```
 
 ---
 
-# Backend Structure
+# Completed Features
+
+## Sprint 1
+
+### Authentication
+
+- JWT Login
+- JWT Validation
+- Password Hashing
+- Token Verification
+
+### Authorization
+
+- RBAC
+- Admin Access
+- HR Access
+- Employee Access
+
+### Monitoring
+
+- Audit Logs
+- Request Logging
+
+### Docker
+
+- FastAPI
+- PostgreSQL
+- Redis
+
+---
+
+## Sprint 2
+
+### Knowledge Base
+
+- Document Upload
+- PDF Support
+- DOCX Support
+- TXT Support
+- Markdown Support
+
+### Document Processing
+
+- Text Extraction
+- Chunking
+- Metadata Extraction
+
+### Embeddings
+
+- Sentence Transformers
+- MiniLM Embeddings
+- Vector Generation
+
+### Vector Database
+
+- ChromaDB
+- Persistent Storage
+- Department Collections
+
+### APIs
+
+- Upload API
+- Knowledge Base API
+- Retrieval API
+- Semantic Search API
+
+### Administration
+
+- Approval Queue
+- Archive
+- Version History
+
+### Evaluation
+
+- Retrieval Benchmark
+- Chunk Evaluation
+- Embedding Benchmark
+
+---
+
+## Enterprise Knowledge Center (Bonus)
+
+Implemented:
+
+- Multiple Upload
+- Folder Management
+- Department Collections
+- Auto Embedding
+- Approval Workflow
+- Document Expiration
+- Semantic Retrieval
+- ChromaDB Integration
+
+---
+
+# Enterprise Architecture
 
 ```text
-backend/
-
-authentication/
-chat/
-rag/
-agents/
-users/
-audit/
-settings/
-
-main.py
-config.py
-database.py
-models.py
+                User
+                  │
+                  ▼
+         Authentication
+                  │
+                  ▼
+          Authorization
+                  │
+                  ▼
+        Enterprise API
+                  │
+       ┌──────────┴──────────┐
+       │                     │
+       ▼                     ▼
+Knowledge Base         Audit Logger
+       │
+       ▼
+Document Processor
+       │
+       ▼
+Chunk Generator
+       │
+       ▼
+Embedding Service
+       │
+       ▼
+ChromaDB
+       │
+       ▼
+Retriever
 ```
 
 ---
 
-# Installation
+# Running Locally
 
 ## Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/enterprise-ai-platform.git
-```
-
----
-
-## Open Project
-
-```bash
+git clone <repository-url>
 cd enterprise-ai-platform
 ```
-
----
 
 ## Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 ```
 
-or
+## Start FastAPI
 
 ```bash
-pip install fastapi uvicorn sqlalchemy psycopg2-binary python-jose passlib[bcrypt] python-multipart python-dotenv
+uvicorn backend.main:app --reload
+```
+
+Open:
+
+```
+http://127.0.0.1:8000/docs
 ```
 
 ---
 
-## Start Server
+# Docker
+
+Build and start:
 
 ```bash
-cd backend
+docker compose up --build
+```
 
-uvicorn main:app --reload
+Stop:
+
+```bash
+docker compose down
 ```
 
 ---
 
-# API URLs
+# API Documentation
 
-Home
-
-```
-GET /
-```
-
-Health Check
+Swagger UI
 
 ```
-GET /health
-```
-
-Swagger Documentation
-
-```
-GET /docs
-```
-
-Authentication
-
-```
-POST /login
-
-POST /logout
-
-POST /refresh-token
-```
-
-Admin
-
-```
-GET /users
-
-POST /users
-
-PUT /users/{id}
-
-DELETE /users/{id}
-```
-
-Roles
-
-```
-GET /roles
-```
-
-Permissions
-
-```
-GET /permissions
+http://127.0.0.1:8000/docs
 ```
 
 ---
 
-# Database
+# Sprint Progress
 
-Database Name
-
-```
-enterprise_ai
-```
-
-Main Tables
-
-- users
-- roles
-- permissions
-- audit_logs
+| Sprint | Status |
+|---------|--------|
+| Sprint 1 | ✅ Completed |
+| Sprint 1 Bonus (Docker) | ✅ Completed |
+| Sprint 2 | ✅ Completed |
+| Sprint 2 Bonus | ✅ Completed |
+| Sprint 3 |  In Progress |
 
 ---
 
-# Security Features
+# Future Enhancements
 
-- Password Hashing
-- JWT Tokens
-- Secure Authentication
-- Token Expiry
-- RBAC Authorization
-- Middleware Protection
+Sprint 3 will introduce:
 
----
-
-# Documentation
-
-Project documentation is available in the **docs** folder.
-
-- api_documentation.md
-- enterprise_architecture.md
-
----
-
-# Sprint 1 Deliverables
-
-- Project Repository
-- Folder Structure
-- FastAPI Backend
-- PostgreSQL Database
-- JWT Authentication
-- RBAC Foundation
-- Admin APIs
-- Audit Logging
-- Swagger Documentation
-- Enterprise Architecture Documentation
-
----
-
-# Future Enhancements (Sprint 2)
-
-- AI Chatbot
-- RAG Implementation
-- ChromaDB / FAISS Integration
-- Multi-Agent System
-- MCP Tool Integration
-- Monitoring Dashboard
-- Docker Deployment
-- Kubernetes Deployment
+- Hybrid Search
+- Query Rewriting
+- Cross Encoder Re-ranking
+- Conversation Memory
+- Context Builder
+- Enterprise Chat API
+- Citation Engine
+- Hallucination Detection
+- RAG Evaluation
+- Enterprise Chat Dashboard
 
 ---
 
 # Author
 
-**Name:** Dhesata Venkatesh
+**D. Venkatesh**
+**BR26AI9991**
 
-**Project:** Enterprise AI Platform for BlackRoth
+Enterprise AI Platform Project
 
-**Sprint:** Sprint 1
-
----
-
-# License
-
-This project is developed for educational and enterprise learning purposes.
+BlackRoth Enterprise AI Training
