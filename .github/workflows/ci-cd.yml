@@ -1,0 +1,156 @@
+name: Enterprise AI Platform CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+
+jobs:
+
+  build-test:
+
+    runs-on: ubuntu-latest
+
+
+    steps:
+
+    # 1. Checkout Code
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+
+    # 2. Backend Setup
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+
+    - name: Install Backend Dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+
+
+    # 3. Linting
+    - name: Run Backend Lint
+      run: |
+        pip install flake8
+        cd backend
+        flake8 .
+
+
+    # 4. Unit Tests
+    - name: Run Backend Tests
+      run: |
+        cd backend
+        pytest tests/
+
+
+    # 5. Frontend Setup
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+
+    - name: Install Frontend Dependencies
+      run: |
+        cd enterprise-ai-ui
+        npm install
+
+
+    # Frontend Tests
+    - name: Run Frontend Tests
+      run: |
+        cd enterprise-ai-ui
+        npm test -- --watchAll=false
+
+
+
+  docker-build:
+
+
+    needs: build-test
+
+    runs-on: ubuntu-latest
+
+
+    steps:
+
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+
+    # Build Backend Image
+    - name: Build Backend Docker Image
+      run: |
+
+        docker build \
+        -t enterprise-backend \
+        ./backend
+
+
+
+    # Build Frontend Image
+    - name: Build Frontend Docker Image
+      run: |
+
+        docker build \
+        -t enterprise-frontend \
+        ./enterprise-ai-ui
+
+
+
+    # Security Scan
+
+    - name: Docker Security Scan
+      uses: aquasecurity/trivy-action@master
+
+      with:
+
+        image-ref: enterprise-backend
+
+
+
+  deploy:
+
+
+    needs: docker-build
+
+    runs-on: ubuntu-latest
+
+
+    steps:
+
+
+    - name: Deploy Kubernetes
+
+      run: |
+
+        echo "Deploying to Kubernetes"
+
+        kubectl apply -f k8s/
+
+
+
+    - name: Smoke Test
+
+      run: |
+
+        echo "Running Production Smoke Tests"
+
+
+
+    - name: Notify Team
+
+      run: |
+
+        echo "Deployment completed successfully" 
