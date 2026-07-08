@@ -1,67 +1,47 @@
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-from backend.audit.logger import log_request
-from backend.auth.routes import router as auth_router
-from backend.admin.routes import router as admin_router
-from backend.auth.deps import get_current_user
-from security.rbac import check_permission
-from backend.rag.document_upload import router as document_upload_router
-from backend.rag.knowledge_api import router as knowledge_router
-from backend.rag.retriever import router as retriever_router
-from backend.admin.document_admin import router as document_admin_router
-from backend.rag.knowledge_center import router as knowledge_center_router
-from backend.rag.folder_manager import router as folder_router
-from backend.rag.department_collections import router as department_router
-from backend.chat.chat_api import router as chat_router
-from backend.chat.enterprise_ai_chat import router as enterprise_chat_router
+from auth.routes import router as auth_router
+from chat.routes import router as chat_router
+from rag.routes import router as knowledge_router
+from agents.routes import router as agents_router
+from workflows.routes import router as workflow_router
+from admin.routes import router as admin_router
+from evaluation.routes import router as analytics_router
 
-app = FastAPI(
-    title="Enterprise AI Platform",
-    description="Enterprise AI Platform for BlackRoth",
-    version="1.0.0"
+app = FastAPI(title="Enterprise AI Platform API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+        "http://localhost:5175",
+        "http://127.0.0.1:5175",
+        "http://localhost:5176",
+        "http://127.0.0.1:5176",
+        "http://localhost:5177",
+        "http://127.0.0.1:5177",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-
-@app.middleware("http")
-async def audit_middleware(request: Request, call_next):
-    response = await call_next(request)
-
-    log_request(
-        user="Unknown",
-        ip=request.client.host,
-        endpoint=request.url.path,
-        method=request.method,
-        status=response.status_code,
-    )
-    return response
-
-
+# Register Routers
 app.include_router(auth_router)
-app.include_router(document_upload_router)
-app.include_router(admin_router)
-app.include_router(knowledge_router)
-app.include_router(retriever_router)
-app.include_router(document_admin_router)
-app.include_router(knowledge_center_router)
-app.include_router(folder_router)
-app.include_router(department_router)
 app.include_router(chat_router)
-app.include_router(enterprise_chat_router)
-
-@app.get(
-    "/",
-    summary="Application Status",
-    description="Checks whether the Enterprise AI Platform is running."
-)
-def home():
-    return {"status": "running"}
+app.include_router(knowledge_router)
+app.include_router(agents_router)
+app.include_router(workflow_router)
+app.include_router(admin_router)
+app.include_router(analytics_router)
 
 
-@app.get(
-    "/hr/documents",
-    summary="Access HR Documents",
-    description="Allows HR users to access HR documents."
-)
-def hr_docs(user=Depends(get_current_user)):
-    check_permission(user["role"], "hr_documents")
-    return {"message": "HR Access Granted"}
+@app.get("/")
+def root():
+    return {
+        "message": "Enterprise AI Platform Backend is Running!"
+    } 
