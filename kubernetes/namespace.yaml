@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+
+metadata:
+  name: enterprise-ai
+
+  labels:
+    app: enterprise-ai-platform
+    environment: production  

@@ -1,0 +1,95 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: enterprise-backend
+
+    ports:
+      - "8000:8000"
+
+    environment:
+      PYTHONUNBUFFERED: "1"
+
+    restart: unless-stopped
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+    depends_on:
+      - postgres
+      - redis
+      - chromadb
+
+  frontend:
+    build:
+      context: ./frontend/enterprise-ai-ui
+      dockerfile: Dockerfile
+
+    container_name: enterprise-frontend
+
+    ports:
+      - "5173:5173"
+
+    depends_on:
+      - backend
+
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16
+
+    container_name: enterprise-postgres
+
+    environment:
+      POSTGRES_DB: enterprise_ai
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+
+    container_name: enterprise-redis
+
+    ports:
+      - "6379:6379"
+
+    restart: unless-stopped
+
+  chromadb:
+    image: chromadb/chroma:latest
+
+    container_name: enterprise-chromadb
+
+    ports:
+      - "8001:8000"
+
+    volumes:
+      - chroma_data:/chroma/chroma
+
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  chroma_data: 

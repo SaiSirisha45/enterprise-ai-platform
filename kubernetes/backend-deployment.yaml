@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: enterprise-backend
+  namespace: enterprise-ai
+
+spec:
+  replicas: 1
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app: enterprise-backend
+
+  template:
+    metadata:
+      labels:
+        app: enterprise-backend
+
+    spec:
+      containers:
+        - name: backend
+
+          image: enterprise_ai_platform-backend:latest
+
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 8000
+
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+
+          livenessProbe:
+            httpGet:
+              path: /docs
+              port: 8000
+
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+          readinessProbe:
+            httpGet:
+              path: /docs
+              port: 8000
+
+            initialDelaySeconds: 15
+            periodSeconds: 5 

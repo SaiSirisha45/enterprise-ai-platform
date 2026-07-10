@@ -1,5 +1,11 @@
 from fastapi import APIRouter
 
+from monitoring.tracing import tracer
+
+from backend.cache.cache_manager import cache
+from backend.performance.api_profiler import profiler
+from backend.schemas.chat import ChatRequest
+
 router = APIRouter(
     prefix="/chat",
     tags=["Chat"]
@@ -14,27 +20,80 @@ chat_history = [
 ]
 
 
+# ==========================================================
+# Get Chat History
+# ==========================================================
+
 @router.get("/history")
+@profiler.profile
 def get_chat_history():
-    return chat_history
+
+    with tracer.start_as_current_span("Get Chat History"):
+
+        cached_history = cache.get_chat_history("default")
+
+        if cached_history:
+
+            return {
+                "source": "redis",
+                "history": cached_history
+            }
+
+        cache.cache_chat_history(
+            "default",
+            chat_history,
+            ttl=86400
+        )
+
+        return {
+            "source": "memory",
+            "history": chat_history
+        }
 
 
-@router.post("")
-def send_message(data: dict):
-    message = data.get("message")
+# ==========================================================
+# Send Message
+# ==========================================================
 
-    chat_history.append({
-        "id": len(chat_history) + 1,
-        "role": "user",
-        "message": message
-    })
+@router.post("/")
+@profiler.profile
+def send_message(data: ChatRequest):
 
-    chat_history.append({
-        "id": len(chat_history) + 1,
-        "role": "assistant",
-        "message": f"You said: {message}"
-    })
+    with tracer.start_as_current_span("Chat Request") as span:
 
-    return {
-        "reply": f"You said: {message}"
-    } 
+        message = data.message
+
+        span.set_attribute(
+            "chat.user_message",
+            message
+        )
+
+        chat_history.append({
+            "id": len(chat_history) + 1,
+            "role": "user",
+            "message": message
+        })
+
+        reply = f"You said: {message}"
+
+        chat_history.append({
+            "id": len(chat_history) + 1,
+            "role": "assistant",
+            "message": reply
+        })
+
+        cache.cache_chat_history(
+            "default",
+            chat_history,
+            ttl=86400
+        )
+
+        span.set_attribute(
+            "chat.response_generated",
+            True
+        )
+
+        return {
+            "reply": reply,
+            "cached": True
+        } 

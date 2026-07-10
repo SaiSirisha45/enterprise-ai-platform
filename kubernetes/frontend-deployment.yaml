@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: enterprise-frontend
+  namespace: enterprise-ai
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: enterprise-frontend
+
+  template:
+    metadata:
+      labels:
+        app: enterprise-frontend
+
+    spec:
+      containers:
+        - name: frontend
+
+          image: enterprise_ai_platform-frontend:latest
+
+          imagePullPolicy: IfNotPresent 
+
+          ports:
+            - containerPort: 5173
+
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+
+            limits:
+              memory: "512Mi"
+              cpu: "250m"
+
+          livenessProbe:
+            tcpSocket:
+              port: 5173
+
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+          readinessProbe:
+            tcpSocket:
+              port: 5173
+
+            initialDelaySeconds: 15
+            periodSeconds: 5 

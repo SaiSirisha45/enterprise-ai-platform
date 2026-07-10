@@ -1,10 +1,16 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from database.database import get_db
-from models.user import User
-from schemas.auth import RegisterRequest, LoginRequest
-from security.hash import hash_password, verify_password
+from backend.database.database import get_db
+from backend.models.user import User
+from backend.schemas.auth import RegisterRequest, LoginRequest
+from backend.security.hash import hash_password, verify_password
+
+from backend.performance.api_profiler import profiler
+from backend.cache.cache_manager import cache
+
+from monitoring.tracing import tracer
+from monitoring.logging import logger
 
 router = APIRouter(
     prefix="/auth",
@@ -12,98 +18,209 @@ router = APIRouter(
 )
 
 
+# ==========================================================
+# Register
+# ==========================================================
+
 @router.post("/register")
-def register(request: RegisterRequest, db: Session = Depends(get_db)):
+@profiler.profile
+def register(
+    request: RegisterRequest,
+    db: Session = Depends(get_db)
+):
 
-    print("========== REGISTER ==========")
-    print("STEP 1")
+    with tracer.start_as_current_span("User Registration"):
 
-    existing_user = db.query(User).filter(
-        User.email == request.email
-    ).first()
+        logger.info(
+            "Registration Request",
+            extra={"email": request.email}
+        )
 
-    print("STEP 2")
+        existing_user = (
+            db.query(User)
+            .filter(User.email == request.email)
+            .first()
+        )
 
-    if existing_user:
-        print("Email already exists")
+        if existing_user:
+
+            logger.warning(
+                "Registration Failed",
+                extra={"email": request.email}
+            )
+
+            return {
+                "error": "Email already registered"
+            }
+
+        hashed_password = hash_password(request.password)
+
+        new_user = User(
+            name=request.name,
+            email=request.email,
+            password=hashed_password,
+            role="user"
+        )
+
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+
+        logger.info(
+            "User Registered Successfully",
+            extra={"user_id": new_user.id}
+        )
+
         return {
-            "error": "Email already registered"
+            "message": "User registered successfully"
         }
 
-    print("STEP 3")
 
-    hashed_password = hash_password(request.password)
-
-    print("STEP 4")
-    print("HASH:", hashed_password)
-
-    new_user = User(
-        name=request.name,
-        email=request.email,
-        password=hashed_password,
-        role="user"
-    )
-
-    print("STEP 5")
-
-    db.add(new_user)
-
-    print("STEP 6")
-
-    db.commit()
-
-    print("STEP 7")
-
-    db.refresh(new_user)
-
-    print("STEP 8")
-    print("REGISTER SUCCESS")
-
-    return {
-        "message": "User registered successfully"
-    }
-
+# ==========================================================
+# Login
+# ==========================================================
 
 @router.post("/login")
-def login(request: LoginRequest, db: Session = Depends(get_db)):
+@profiler.profile
+def login(
+    request: LoginRequest,
+    db: Session = Depends(get_db)
+):
 
-    print("========== LOGIN ==========")
+    with tracer.start_as_current_span("User Login"):
 
-    user = db.query(User).filter(
-        User.email == request.email
-    ).first()
+        logger.info(
+            "Login Attempt",
+            extra={"email": request.email}
+        )
 
-    if not user:
-        return {
-            "error": "Invalid email or password"
+        user = (
+            db.query(User)
+            .filter(User.email == request.email)
+            .first()
+        )
+
+        if not user:
+
+            logger.warning(
+                "Login Failed - User Not Found",
+                extra={"email": request.email}
+            )
+
+            return {
+                "error": "Invalid email or password"
+            }
+
+        if not verify_password(
+            request.password,
+            user.password
+        ):
+
+            logger.warning(
+                "Login Failed - Invalid Password",
+                extra={"email": request.email}
+            )
+
+            return {
+                "error": "Invalid email or password"
+            }
+
+        response = {
+            "access_token": "demo-access-token",
+            "refresh_token": "demo-refresh-token",
+            "token_type": "bearer",
+            "user": {
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "role": user.role
+            }
         }
 
-    print("User Found")
+        # Cache user session for 1 hour
+        cache.cache_session(
+            user.id,
+            response,
+            ttl=3600
+        )
 
-    print("Stored Password:")
-    print(user.password)
+        logger.info(
+            "Login Success",
+            extra={
+                "user_id": user.id,
+                "role": user.role
+            }
+        )
 
-    print("Entered Password:")
-    print(request.password)
+        return response
 
-    if not verify_password(
-        request.password,
-        user.password
-    ):
-        return {
-            "error": "Invalid email or password"
-        }
 
-    print("LOGIN SUCCESS")
+# ==========================================================
+# User Profile
+# ==========================================================
 
-    return {
-        "access_token": "demo-access-token",
-        "refresh_token": "demo-refresh-token",
-        "token_type": "bearer",
-        "user": {
+@router.get("/profile/{user_id}")
+@profiler.profile
+def get_profile(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+
+    with tracer.start_as_current_span("Get User Profile"):
+
+        # Check Redis cache first
+        cached_profile = cache.get_user_profile(user_id)
+
+        if cached_profile:
+
+            logger.info(
+                "User Profile Loaded From Redis",
+                extra={"user_id": user_id}
+            )
+
+            return {
+                "source": "redis",
+                "data": cached_profile
+            }
+
+        # Load from database
+        user = (
+            db.query(User)
+            .filter(User.id == user_id)
+            .first()
+        )
+
+        if not user:
+
+            logger.warning(
+                "User Not Found",
+                extra={"user_id": user_id}
+            )
+
+            return {
+                "error": "User not found"
+            }
+
+        profile = {
             "id": user.id,
             "name": user.name,
             "email": user.email,
             "role": user.role
         }
-    } 
+
+        # Cache profile for 30 minutes
+        cache.cache_user_profile(
+            user.id,
+            profile,
+            ttl=1800
+        )
+
+        logger.info(
+            "User Profile Cached",
+            extra={"user_id": user.id}
+        )
+
+        return {
+            "source": "database",
+            "data": profile
+        } 

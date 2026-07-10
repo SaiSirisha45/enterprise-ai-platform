@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+
+kind: NetworkPolicy
+
+
+metadata:
+
+  name: enterprise-ai-network-policy
+
+  namespace: enterprise-ai
+
+
+spec:
+
+  podSelector: {}
+
+  policyTypes:
+
+  - Ingress
+
+  - Egress 

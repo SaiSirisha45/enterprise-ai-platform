@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: enterprise-backend-service
+  namespace: enterprise-ai
+
+spec:
+  selector:
+    app: enterprise-backend
+
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+
+  type: ClusterIP 
